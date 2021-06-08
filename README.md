@@ -14,6 +14,7 @@ $ catkin_make -DCMAKE_BUILD_TYPE=Release
 ```
 $ source /opt/ros/noetic/setup.bash
 $ source devel/setup.bash
+$ roscore &
 $ rosrun loopback_test loopback_test_talker 64K 1 10
 ```
 - First parameter
