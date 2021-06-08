@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>bounded_message</name>
+  <version>0.0.0</version>
+  <description>The bounded_message package</description>
+
+  <maintainer email="barry.xu@sony.com">Barry Xu</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>message_generation</build_depend>
+
+  <exec_depend>message_runtime</exec_depend>
+
+</package>
