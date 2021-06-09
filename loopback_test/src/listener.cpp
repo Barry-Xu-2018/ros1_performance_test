@@ -100,23 +100,23 @@ public:
     if (msg_size_ == SIZE_4KB) {
       std::cout << "Receive 4KB data" << std::endl;
       auto callback = std::bind(&test_sub::download<bounded_message::TestData4kConstPtr>, this, std::placeholders::_1);
-      sub_ = n_.subscribe<bounded_message::TestData4k>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().udp());
+      sub_ = n_.subscribe<bounded_message::TestData4k>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().tcp().tcpNoDelay());
     } else if (msg_size_ == SIZE_64KB) {
       std::cout << "Receive 64KB data" << std::endl;
       auto callback = std::bind(&test_sub::download<bounded_message::TestData64kConstPtr>, this, std::placeholders::_1);
-      sub_ = n_.subscribe<bounded_message::TestData64k>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().udp());
+      sub_ = n_.subscribe<bounded_message::TestData64k>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().tcp().tcpNoDelay());
     } else if (msg_size_ == SIZE_256KB) {
       std::cout << "Receive 256KB data" << std::endl;
       auto callback = std::bind(&test_sub::download<bounded_message::TestData256kConstPtr>, this, std::placeholders::_1);
-      sub_ = n_.subscribe<bounded_message::TestData256k>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().udp());
+      sub_ = n_.subscribe<bounded_message::TestData256k>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().tcp().tcpNoDelay());
     } else if (msg_size_ == SIZE_2MB) {
       std::cout << "Receive 2MB data" << std::endl;
       auto callback = std::bind(&test_sub::download<bounded_message::TestData2mConstPtr>, this, std::placeholders::_1);
-      sub_ = n_.subscribe<bounded_message::TestData2m>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().udp());
+      sub_ = n_.subscribe<bounded_message::TestData2m>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().tcp().tcpNoDelay());
     } else {
       std::cout << "Receive 8MB data" << std::endl;
       auto callback = std::bind(&test_sub::download<bounded_message::TestData8mConstPtr>, this, std::placeholders::_1);
-      sub_ = n_.subscribe<bounded_message::TestData8m>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().udp());
+      sub_ = n_.subscribe<bounded_message::TestData8m>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().tcp().tcpNoDelay());
     }
 
     if(0 < g_shm_addr->need_subscriber_count){
