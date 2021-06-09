@@ -28,6 +28,8 @@ $ rosrun loopback_test loopback_test_talker 64K 1 10
 - Third parameter
 
 	The number of test times
+	
+If want to exit running, you should kill this process.
 
 ### Subscriber
 
@@ -37,3 +39,5 @@ $ source /opt/ros/noetic/setup.bash
 $ source devel/setup.bash
 $ rosrun loopback_test loopback_test_listener
 ```
+Subscriber may not exist if message from publisher is lost.  
+You should press ctrl+c to exit.
