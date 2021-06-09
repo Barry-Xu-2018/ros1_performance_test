@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <time.h>
 
+#include <string>
+#include <thread>
 #include <functional>
 
 #include "ros/ros.h"
@@ -66,8 +68,7 @@ static int shm_open(void){
   return EXIT_SUCCESS;
 }
 
-static void UpdataShmData(const struct timespec& ts_end){                                                                                                                                                          
-
+static void UpdataShmData(const struct timespec& ts_end){
   flock(g_shm_fd, LOCK_EX);
   g_shm_addr->ts_transmission_end.tv_sec = ts_end.tv_sec;
   g_shm_addr->ts_transmission_end.tv_nsec = ts_end.tv_nsec;
@@ -78,7 +79,6 @@ static void UpdataShmData(const struct timespec& ts_end){
 class test_sub {
 public:
   test_sub() {
-
   }
 
   ~ test_sub() {
@@ -92,7 +92,7 @@ public:
   bool init() {
     if (shm_open()) {
       return false;
-    } 
+    }
 
     msg_size_ = g_shm_addr->msg_size;
     test_times_ = g_shm_addr->send_times;
@@ -118,7 +118,7 @@ public:
       auto callback = std::bind(&test_sub::download<bounded_message::TestData8mConstPtr>, this, std::placeholders::_1);
       sub_ = n_.subscribe<bounded_message::TestData8m>("loopback_test", 10, callback, ros::VoidConstPtr(), ros::TransportHints().udp());
     }
-    
+
     if(0 < g_shm_addr->need_subscriber_count){
       flock(g_shm_fd, LOCK_EX);
       g_shm_addr->need_subscriber_count--;
@@ -164,7 +164,10 @@ private:
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "listener");
+  std::stringstream id;
+  id << std::this_thread::get_id();
+
+  ros::init(argc, argv, "listener_" + id.str());
 
   test_sub ts;
 

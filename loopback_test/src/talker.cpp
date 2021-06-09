@@ -28,7 +28,7 @@
 #define SIZE_8MB    8*1024*1024
 
 #define FILE_PERM 0600
-#define SHM_MAP_FILE "/tmp/test_shmmapfile"  
+#define SHM_MAP_FILE "/tmp/test_shmmapfile"
 
 typedef struct{
   int need_subscriber_count;
@@ -40,7 +40,6 @@ typedef struct{
 static int g_shm_fd = -1;
 static ShmData* g_shm_addr = NULL;
 static int pub_count = 0;
-static int g_count = 0;
 
 static void show_usage(std::string name)
 {
@@ -79,7 +78,11 @@ static int shm_open(void){
   return EXIT_SUCCESS;
 }
 
-static void WaitSubscribers(int sub_num){                                                                                                                                                                   
+static bool WaitSubscribers(int sub_num, bool max_check_loop_enable){
+  bool ret = false;
+  constexpr int max_check_loop = 5;
+  int i = 0;
+
   // wait for all subscriber building
   while (true){
     flock(g_shm_fd, LOCK_EX);
@@ -87,14 +90,25 @@ static void WaitSubscribers(int sub_num){
     flock(g_shm_fd, LOCK_UN);
 
     if (need_subscriber_count == 0){
+      ret = true;
       break;
     }
-    usleep(100);
+
+    if (max_check_loop_enable) {
+      if (i < max_check_loop) {
+        usleep(10000);
+        ++i;
+      } else {
+        break;
+      }
+    }
   }
 
   flock(g_shm_fd, LOCK_EX);
   g_shm_addr->need_subscriber_count = sub_num;
   flock(g_shm_fd, LOCK_UN);
+
+  return ret;
 }
 
 enum MSG_SIZE {
@@ -170,7 +184,7 @@ public:
       default:
         return false;
     }
-    
+
     g_shm_addr->msg_size = size_list_[size_type_];
     g_shm_addr->need_subscriber_count = sub_num_;
     g_shm_addr->send_times = test_times_;
@@ -180,28 +194,34 @@ public:
 
   bool run() {
     for(int i = 0; i <= test_times_; i++){
-      WaitSubscribers(sub_num_);
-
       if(i == 0){
+        WaitSubscribers(sub_num_, false);
+        std::cout << "All subscribers are connected !\nStart to test" << std::endl;
         usleep(3000000);
       }else{
-        flock(g_shm_fd, LOCK_EX);
-        double duration = (g_shm_addr->ts_transmission_end.tv_sec - ts_transmission_start_.tv_sec)
-                + double(g_shm_addr->ts_transmission_end.tv_nsec - ts_transmission_start_.tv_nsec) / 1000000000;
-        flock(g_shm_fd, LOCK_UN);
-        transmission_durations_.push_back(duration);
-        pub_count = g_count;
-
-        /* print_log("\n[%s][%s][%dKB][%d/%d] latency %.9f ms, throughput %.9f MB/s\n",
-            _node_name.c_str(), _topic_name.c_str(),
-            g_shm_addr->msg_size/1024,
-            g_shm_addr->need_subscriber_count, pub_count,
-            duration * 1000, _info.msg_size / duration / 1024 / 1024);*/
+        if (WaitSubscribers(sub_num_, true)) {
+          flock(g_shm_fd, LOCK_EX);
+          double duration = (g_shm_addr->ts_transmission_end.tv_sec - ts_transmission_start_.tv_sec)
+                  + double(g_shm_addr->ts_transmission_end.tv_nsec - ts_transmission_start_.tv_nsec) / 1000000000;
+          flock(g_shm_fd, LOCK_UN);
+          transmission_durations_.push_back(duration);
+          std::cout << "." << std::flush;
+          ++pub_count;
+        }
 
         if(i == test_times_){
+          std::cout << "\n" << std::endl;
+          if (pub_count != test_times_) {
+            std::cerr << "Loss " << (test_times_ - pub_count) << " messages !" << std::endl;
+          }
           break;
         }
       }
+
+      flock(g_shm_fd, LOCK_EX);
+      g_shm_addr->ts_transmission_end.tv_sec = 0;
+      g_shm_addr->ts_transmission_end.tv_nsec = 0;
+      flock(g_shm_fd, LOCK_UN);
 
       switch(size_type_) {
         case MSG_SIZE_4K:
@@ -234,35 +254,21 @@ public:
         std::cerr << "Break execution !" << std::endl;
         return false;
       }
-    
-      pub_count = ++g_count;
-
-      #if 0
-      if(pub_count >= test_times_){ 
-        print_log("[%s][%s] upload message [%dKB] to %d subscriber %d times\n",
-            _node_name.c_str(), _topic_name.c_str(),
-            g_shm_addr->msg_size/1024,
-            g_shm_addr->need_subscriber_count, pub_count);
-      }
-      #endif
     }
 
     return true;
   }
 
-  void print_result() {                                                                                                                            
+  void print_result() {
     if (transmission_durations_.size() != 0){
       auto result = std::minmax_element(transmission_durations_.begin(), transmission_durations_.end());
       auto sum = std::accumulate(transmission_durations_.begin(), transmission_durations_.end(), .0f);
 
-      std::cout << "sum: " << sum << std::endl;
-
       auto latency = sum / transmission_durations_.size();
       auto throughput = (g_shm_addr->msg_size * transmission_durations_.size()) / (sum * 1024 * 1024);
 
-
       std::cout << "buffer_size(KB) min(s) max(s) count sum(s) average(s) latency(ms) throughput(MB/s)" << std::endl;
-      std::cout << std::right << std::fixed << std::setprecision(9)          
+      std::cout << std::right << std::fixed << std::setprecision(9)
           << g_shm_addr->msg_size / 1024 <<" "
           << std::fixed << std::setprecision(9) << *result.first <<" "
           << std::fixed << std::setprecision(9) << *result.second <<" "
@@ -272,7 +278,7 @@ public:
           << std::fixed << std::setprecision(9) << latency * 1000 <<" "
           << std::fixed << std::setprecision(9) << throughput << std::endl;
   }
-}  
+}
 
 public:
   const long size_list_[5] = {SIZE_4KB, SIZE_64KB, SIZE_256KB, SIZE_2MB, SIZE_8MB};
@@ -299,7 +305,7 @@ int main(int argc, char **argv)
   }
 
   std::string data_size_str(argv[1]);
-  MSG_SIZE size_type; 
+  MSG_SIZE size_type;
 
   if (data_size_str == "4K") {
     size_type = MSG_SIZE_4K;
@@ -314,7 +320,7 @@ int main(int argc, char **argv)
   } else {
     std::cerr << "Wrong DATA_SIZE: " << data_size_str << std::endl;
     show_usage("loopback_test_talker");
-    return 1;  
+    return 1;
   }
 
   int wait_sub_num = std::stoi(std::string(argv[2]));
