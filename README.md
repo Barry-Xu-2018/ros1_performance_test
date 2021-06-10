@@ -12,7 +12,6 @@ $ catkin_make -DCMAKE_BUILD_TYPE=Release
 
 ### Publisher
 ```
-$ source /opt/ros/noetic/setup.bash
 $ source devel/setup.bash
 $ roscore &
 $ rosrun loopback_test loopback_test_talker 64K 1 10
@@ -35,7 +34,6 @@ If want to exit running, you should kill this process.
 
 Open new terminal to run subscriber
 ```
-$ source /opt/ros/noetic/setup.bash
 $ source devel/setup.bash
 $ rosrun loopback_test loopback_test_listener
 ```
