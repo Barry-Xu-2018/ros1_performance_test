@@ -80,7 +80,7 @@ static int shm_open(void){
 
 static bool WaitSubscribers(int sub_num, bool max_check_loop_enable){
   bool ret = false;
-  constexpr int max_check_loop = 5;
+  constexpr int max_check_loop = 100;
   int i = 0;
 
   // wait for all subscriber building
